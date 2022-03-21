@@ -1,0 +1,19 @@
+type XTokenSent @entity {
+    id: ID!
+    createdAt: Date!
+    sender: String! @index
+    hash: String!
+    destChain: BigInt
+    recipient: String!
+    amount: BigInt!
+    currencyLocation: String!
+    isX3: Boolean!
+}
+
+type CurrencyDeposit @entity {
+    id: ID!
+    createdAt: Date!
+    currencyId: String!
+    recipient: String!
+    amount: BigInt!
+}

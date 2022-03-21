@@ -1,0 +1,25 @@
+specVersion: 0.0.1
+description: ''
+repository: https://github.com/Phala-Network/khala-subbridge-subquery.git
+schema: ./schema.graphql
+network:
+  endpoint: wss://karura.api.onfinality.io/public-ws #ws://host.docker.internal:9955
+  types:
+    Address: MultiAddress
+    LookupSource: MultiAddress
+dataSources:
+  - name: main
+    kind: substrate/Runtime
+    startBlock: 1
+    mapping:
+      handlers:
+        - handler: handleXTokenTransferredEvent
+          kind: substrate/EventHandler
+          filter:
+            module: xTokens
+            method: TransferredMultiAssets
+        - handler: handleCurrencyDepositedEvent
+          kind: substrate/EventHandler
+          filter:
+            module: currencies
+            method: Deposited

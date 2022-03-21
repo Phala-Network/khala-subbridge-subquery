@@ -6,7 +6,7 @@ type XTokenSent @entity {
     destChain: BigInt
     recipient: String!
     amount: BigInt!
-    currencyId: String!
+    currencyLocation: String!
     isX3: Boolean!
 }
 

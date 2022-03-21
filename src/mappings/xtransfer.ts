@@ -4,21 +4,24 @@ import { SubstrateEvent } from '@subql/types'
 import { AccountId, MultiLocation } from "@polkadot/types/interfaces"
 import { CurrencyId } from "@acala-network/types/interfaces"
 import { CurrencyDeposit, XTokenSent } from '../types'
+import { XcmV1MultiAsset, XcmV1MultiassetMultiAssets, XcmV1MultiLocation } from '@polkadot/types/lookup'
 
 export async function handleXTokenTransferredEvent(ctx: SubstrateEvent): Promise<void> {
     const {
-        data: [sender, currencyId, amount, dest],
-    } = ctx.event as unknown as IEvent<[AccountId, CurrencyId, U256, MultiLocation]>
+        data: [sender, assets, fee, dest],
+    } = ctx.event as unknown as IEvent<[AccountId, XcmV1MultiassetMultiAssets, XcmV1MultiAsset, MultiLocation]>
 
     const blockHeight = ctx.block.block.header.number.toBigInt()
     const txId = ctx.extrinsic?.idx
-    const id = `${blockHeight}-${txId}-${amount}`
+    const amount = assets[0].fun.asFungible.toBigInt()
+    const currency = assets[0].id.asConcrete.toString()
 
+    const id = `${blockHeight}-${txId}-${amount}`
     if (undefined === (await XTokenSent.get(id))) {
         const record = new XTokenSent(id)
         record.createdAt = ctx.block.timestamp
-        record.currencyId = currencyId.toString()
-        record.amount = amount.toBigInt()
+        record.currencyLocation = currency
+        record.amount = amount
         record.sender = sender.toString()
         record.hash = ctx.extrinsic?.extrinsic.hash.toHex()
 
@@ -45,7 +48,7 @@ export async function handleXTokenTransferredEvent(ctx: SubstrateEvent): Promise
             record.isX3 = false
             record.destChain = undefined
             // Substrate account
-            record.recipient = dest.interior.asX2[1].asAccountId32.toString()
+            record.recipient = dest.interior.asX2[1].asAccountId32.id.toString()
         } else {
             // Unrecognised format
             return;

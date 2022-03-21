@@ -17,7 +17,7 @@ dataSources:
           kind: substrate/EventHandler
           filter:
             module: xTokens
-            method: Transferred
+            method: TransferredMultiAssets
         - handler: handleCurrencyDepositedEvent
           kind: substrate/EventHandler
           filter:

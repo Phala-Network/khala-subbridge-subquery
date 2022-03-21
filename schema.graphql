@@ -1,70 +1,19 @@
-type XcmTransfered @entity {
+type XTokenSent @entity {
     id: ID!
     createdAt: Date!
-
-    asset: String! @index
     sender: String! @index
-    recipient: String! @index
-    amount: BigInt
-}
-
-type XcmDeposited @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    recipient: String! @index
-    amount: BigInt
-    isForward: Boolean
-}
-
-type XcmWithdrawn @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    depositer: String! @index
-    amount: BigInt
-}
-
-type Tx @entity {
-    id: ID!
     hash: String!
-    sender: String!
+    destChain: BigInt
+    recipient: String!
+    amount: BigInt!
+    currencyId: String!
+    isX3: Boolean!
 }
 
-type BridgeOutboundingRecord @entity {
+type CurrencyDeposit @entity {
     id: ID!
     createdAt: Date!
-
-    # destChainId and depositNonce can be used to track
-    # crosschain transfer status on dest chain
-    destChainId: Int! @index
-    depositNonce: BigInt! @index
-
-    resourceId: String! @index
-    amount: BigInt
-    recipient: String @index
-
-    sendTx: String
-
-    # Sender can be used to construct user transaction history
-    sender: String @index
-}
-
-type BridgeInboundingRecord @entity {
-    id: ID!
-    createdAt: Date!
-
-    # Origin chain can use destChainId and depositNonce to track
-    # crosschain transfer status on this chain
-    originChainId: Int! @index
-    depositNonce: BigInt! @index
-
-    resourceId: String! @index
-    # Proposal status being updated when vote happened
-    status: String!
-
-    voteTxs: [String!]!
-    executeTx: String
+    currencyId: String!
+    recipient: String!
+    amount: BigInt!
 }

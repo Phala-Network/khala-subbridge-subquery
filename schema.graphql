@@ -33,6 +33,25 @@ type Tx @entity {
     sender: String!
 }
 
+type BridgeDeposited @entity {
+    id: ID!
+    createdAt: Date!
+
+    asset: String! @index
+    recipient: String! @index
+    amount: BigInt
+}
+
+type BridgeForwarded @entity {
+    id: ID!
+    createdAt: Date!
+
+    asset: String! @index
+    recipient: String! @index
+    dest: String!
+    amount: BigInt
+}
+
 type BridgeOutboundingRecord @entity {
     id: ID!
     createdAt: Date!

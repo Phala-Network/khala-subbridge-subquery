@@ -203,6 +203,16 @@ dataSources:
     startBlock: 1401105
     mapping:
       handlers:
+        - handler: handleBridgeDepositedEvent
+          kind: substrate/EventHandler
+          filter:
+            module: bridgeTransfer
+            method: Deposited
+        - handler: handleBridgeForwardedEvent
+          kind: substrate/EventHandler
+          filter:
+            module: bridgeTransfer
+            method: Forwarded
         - handler: handleFungibleTransferEvent
           kind: substrate/EventHandler
           filter:

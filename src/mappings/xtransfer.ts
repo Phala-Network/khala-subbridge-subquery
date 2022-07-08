@@ -7,59 +7,12 @@ import { XcmV1MultiAsset, XcmV1MultiLocation } from '@polkadot/types/lookup'
 
 import { BridgeChainId, DepositNonce, ResourceId } from '../interfaces'
 import {
-    BridgeDeposited, BridgeForwarded, BridgeOutboundingRecord, BridgeInboundingRecord,
+    BridgeOutboundingRecord, BridgeInboundingRecord,
     Tx, XcmTransfered, XcmDeposited, XcmWithdrawn
 } from '../types'
 
-export async function handleBridgeDepositedEvent(ctx: SubstrateEvent): Promise<void> {
-    const {
-        data: [asset, recipient, amount],
-    } = ctx.event as unknown as IEvent<[XcmV1MultiLocation, AccountId, Balance]>
 
-    const hash = ctx.extrinsic?.extrinsic.hash.toHex()
-    const id = `${recipient.toString()}-${hash}`
-    let record = await BridgeDeposited.get(id)
-    if (record === undefined) {
-        const record = new BridgeDeposited(id)
-        record.createdAt = ctx.block.timestamp
-        record.asset = asset.toString()
-        record.recipient = recipient.toString()
-        record.amount = amount.toBigInt()
-        await record.save()
-        logger.debug(`Add new BridgeDeposited record: ${record}`)
-    }
-}
-
-export async function handleBridgeForwardedEvent(ctx: SubstrateEvent): Promise<void> {
-    const {
-        data: [asset, dest, amount],
-    } = ctx.event as unknown as IEvent<[XcmV1MultiLocation, XcmV1MultiLocation, Balance]>
-
-    let recipient
-    if (dest.parents.eq(1) && dest.interior.isX1 && dest.interior.asX1.isAccountId32) { // to relaychain
-        recipient = encodeAddress(dest.interior.asX1.asAccountId32.id.toHex(), 42).toString()
-    } else if (dest.parents.eq(1) && dest.interior.isX2 && dest.interior.asX2[0].isParachain && dest.interior.asX2[1].isAccountId32) {  // to parachain
-        recipient = encodeAddress(dest.interior.asX2[1].asAccountId32.id.toHex(), 42).toString()
-    } else {
-        recipient = 'unknown'
-    }
-
-    const hash = ctx.extrinsic?.extrinsic.hash.toHex()
-    const id = `${recipient.toString()}-${hash}`
-    let record = await BridgeForwarded.get(id)
-    if (record === undefined) {
-        const record = new BridgeForwarded(id)
-        record.createdAt = ctx.block.timestamp
-        record.asset = asset.toString()
-        record.dest = dest.toString()
-        record.recipient = recipient
-        record.amount = amount.toBigInt()
-        await record.save()
-        logger.debug(`Add new BridgeForwarded record: ${record}`)
-    }
-}
-
-export async function handleFungibleTransferEvent(ctx: SubstrateEvent): Promise<void> {
+export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec, resourceId, amount, recipient],
     } = ctx.event as unknown as IEvent<[BridgeChainId, DepositNonce, ResourceId, U256, Bytes]>
@@ -91,7 +44,7 @@ export async function handleFungibleTransferEvent(ctx: SubstrateEvent): Promise<
     }
 }
 
-export async function handleProposalVoteForEvent(ctx: SubstrateEvent): Promise<void> {
+export async function handleChainbridgeProposalVoteFor(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec, _voter],
     } = ctx.event as unknown as IEvent<[BridgeChainId, DepositNonce, AccountId]>
@@ -125,7 +78,7 @@ export async function handleProposalVoteForEvent(ctx: SubstrateEvent): Promise<v
     logger.debug(`Add new vote into inbounding record: ${record}`)
 }
 
-export async function handleProposalApprovedEvent(ctx: SubstrateEvent): Promise<void> {
+export async function handleChainbridgeProposalApproved(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec],
     } = ctx.event as unknown as IEvent<[BridgeChainId, DepositNonce]>
@@ -142,7 +95,7 @@ export async function handleProposalApprovedEvent(ctx: SubstrateEvent): Promise<
     }
 }
 
-export async function handleProposalSucceededEvent(ctx: SubstrateEvent): Promise<void> {
+export async function handleChainbridgeProposalSucceeded(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec],
     } = ctx.event as unknown as IEvent<[BridgeChainId, DepositNonce]>
@@ -167,7 +120,7 @@ export async function handleProposalSucceededEvent(ctx: SubstrateEvent): Promise
     }
 }
 
-export async function handleProposalRejectedEvent(ctx: SubstrateEvent): Promise<void> {
+export async function handleChainbridgeProposalRejected(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec],
     } = ctx.event as unknown as IEvent<[BridgeChainId, DepositNonce]>
@@ -184,7 +137,7 @@ export async function handleProposalRejectedEvent(ctx: SubstrateEvent): Promise<
     }
 }
 
-export async function handleProposalFailedEvent(ctx: SubstrateEvent): Promise<void> {
+export async function handleChainbridgeProposalFailed(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec],
     } = ctx.event as unknown as IEvent<[BridgeChainId, DepositNonce]>

@@ -203,58 +203,34 @@ dataSources:
     startBlock: 1401105
     mapping:
       handlers:
-        - handler: handleBridgeDepositedEvent
-          kind: substrate/EventHandler
-          filter:
-            module: bridgeTransfer
-            method: Deposited
-        - handler: handleBridgeForwardedEvent
-          kind: substrate/EventHandler
-          filter:
-            module: bridgeTransfer
-            method: Forwarded
-        - handler: handleFungibleTransferEvent
+        - handler: handleChainbridgeFungibleTransfer
           kind: substrate/EventHandler
           filter:
             module: chainBridge
             method: FungibleTransfer
-        - handler: handleProposalVoteForEvent
+        - handler: handleChainbridgeProposalVoteFor
           kind: substrate/EventHandler
           filter:
             module: chainBridge
             method: VoteFor
-        - handler: handleProposalApprovedEvent
+        - handler: handleChainbridgeProposalApproved
           kind: substrate/EventHandler
           filter:
             module: chainBridge
             method: ProposalApproved
-        - handler: handleProposalSucceededEvent
+        - handler: handleChainbridgeProposalSucceeded
           kind: substrate/EventHandler
           filter:
             module: chainBridge
             method: ProposalSucceeded
-        - handler: handleProposalRejectedEvent
+        - handler: handleChainbridgeProposalRejected
           kind: substrate/EventHandler
           filter:
             module: chainBridge
             method: ProposalRejected
-        - handler: handleProposalFailedEvent
+        - handler: handleChainbridgeProposalFailed
           kind: substrate/EventHandler
           filter:
             module: chainBridge
             method: ProposalFailed
-        - handler: handleXcmTransferedEvent
-          kind: substrate/EventHandler
-          filter:
-            module: xcmTransfer
-            method: AssetTransfered
-        - handler: handleXcmDepositedEvent
-          kind: substrate/EventHandler
-          filter:
-            module: xcmTransfer
-            method: XcmDeposited
-        - handler: handleXcmWithdrawnEvent
-          kind: substrate/EventHandler
-          filter:
-            module: xcmTransfer
-            method: XcmWithdrawn
+

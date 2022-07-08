@@ -7,10 +7,53 @@ import { XcmV1MultiAsset, XcmV1MultiLocation } from '@polkadot/types/lookup'
 
 import { BridgeChainId, DepositNonce, ResourceId } from '../interfaces'
 import {
-    BridgeOutboundingRecord, BridgeInboundingRecord,
+    CTxSent, CTxReceived,
     Tx, XcmTransfered, XcmDeposited, XcmWithdrawn
 } from '../types'
 
+export async function handleXTransferWithdrawn(ctx: SubstrateEvent): Promise<void> {
+
+}
+
+
+export async function handleXTransferDeposited(ctx: SubstrateEvent): Promise<void> {
+
+}
+
+export async function handleXTransferForwarded(ctx: SubstrateEvent): Promise<void> {
+
+}
+
+export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promise<void> {
+    const {
+        data: [asset, origin, dest],
+    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation, XcmV1MultiLocation]>
+
+    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
+    let sender = origin.interior.asX1.asAccountId32.id.toString()
+    let recipient
+    if (dest.parents.eq(1) && dest.interior.isX1 && dest.interior.asX1.isAccountId32) { // to relaychain
+        recipient = encodeAddress(dest.interior.asX1.asAccountId32.id.toHex(), 42).toString()
+    } else if (dest.parents.eq(1) && dest.interior.isX2 && dest.interior.asX2[0].isParachain && dest.interior.asX2[1].isAccountId32) {  // to parachain
+        recipient = encodeAddress(dest.interior.asX2[1].asAccountId32.id.toHex(), 42).toString()
+    } else {
+        recipient = 'unknown'
+    }
+
+    const id = `${sender}-${hash}`
+    let record = await XcmTransfered.get(id)
+    if (record === undefined) {
+        const record = new XcmTransfered(id)
+        record.createdAt = ctx.block.timestamp
+        record.sender = sender
+        record.asset = asset.id.asConcrete.toString()
+        record.recipient = recipient
+        // We can safely unwrap here because currently only support fungible transfer
+        record.amount = asset.fun.asFungible.toBigInt()
+        await record.save()
+        logger.debug(`Add new XcmTransfered record: ${record}`)
+    }
+}
 
 export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Promise<void> {
     const {
@@ -22,8 +65,8 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
 
     const id = `${chainId}-${depositNonce}`
 
-    if (undefined === (await BridgeOutboundingRecord.get(id))) {
-        const record = new BridgeOutboundingRecord(id)
+    if (undefined === (await CTxSent.get(id))) {
+        const record = new CTxSent(id)
         record.createdAt = ctx.block.timestamp
         record.destChainId = chainId
         record.depositNonce = depositNonce
@@ -53,9 +96,9 @@ export async function handleChainbridgeProposalVoteFor(ctx: SubstrateEvent): Pro
     const depositNonce = depositNonceCodec.toBigInt()
 
     const id = `${originChainId}-${depositNonce}`
-    let record = await BridgeInboundingRecord.get(id)
+    let record = await CTxReceived.get(id)
     if (record === undefined) {
-        record = new BridgeInboundingRecord(id)
+        record = new CTxReceived(id)
         record.createdAt = ctx.block.timestamp
         record.originChainId = originChainId
         record.depositNonce = depositNonce
@@ -87,7 +130,7 @@ export async function handleChainbridgeProposalApproved(ctx: SubstrateEvent): Pr
     const depositNonce = depositNonceCodec.toBigInt()
 
     const id = `${originChainId}-${depositNonce}`
-    let record = await BridgeInboundingRecord.get(id)
+    let record = await CTxReceived.get(id)
     if (record !== undefined) {
         record.status = 'Approved'
         await record.save()
@@ -104,7 +147,7 @@ export async function handleChainbridgeProposalSucceeded(ctx: SubstrateEvent): P
     const depositNonce = depositNonceCodec.toBigInt()
 
     const id = `${originChainId}-${depositNonce}`
-    let record = await BridgeInboundingRecord.get(id)
+    let record = await CTxReceived.get(id)
     if (record !== undefined) {
         record.status = 'Succeeded'
 
@@ -129,7 +172,7 @@ export async function handleChainbridgeProposalRejected(ctx: SubstrateEvent): Pr
     const depositNonce = depositNonceCodec.toBigInt()
 
     const id = `${originChainId}-${depositNonce}`
-    let record = await BridgeInboundingRecord.get(id)
+    let record = await CTxReceived.get(id)
     if (record !== undefined) {
         record.status = 'Rejected'
         await record.save()
@@ -146,103 +189,10 @@ export async function handleChainbridgeProposalFailed(ctx: SubstrateEvent): Prom
     const depositNonce = depositNonceCodec.toBigInt()
 
     const id = `${originChainId}-${depositNonce}`
-    let record = await BridgeInboundingRecord.get(id)
+    let record = await CTxReceived.get(id)
     if (record !== undefined) {
         record.status = 'Failed'
         await record.save()
         logger.debug(`Inbounding record failed: ${id}`)
-    }
-}
-
-export async function handleXcmTransferedEvent(ctx: SubstrateEvent): Promise<void> {
-    const {
-        data: [asset, origin, dest],
-    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation, XcmV1MultiLocation]>
-
-    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
-    let sender = origin.interior.asX1.asAccountId32.id.toString()
-    let recipient
-    if (dest.parents.eq(1) && dest.interior.isX1 && dest.interior.asX1.isAccountId32) { // to relaychain
-        recipient = encodeAddress(dest.interior.asX1.asAccountId32.id.toHex(), 42).toString()
-    } else if (dest.parents.eq(1) && dest.interior.isX2 && dest.interior.asX2[0].isParachain && dest.interior.asX2[1].isAccountId32) {  // to parachain
-        recipient = encodeAddress(dest.interior.asX2[1].asAccountId32.id.toHex(), 42).toString()
-    } else {
-        recipient = 'unknown'
-    }
-
-    const id = `${sender}-${hash}`
-    let record = await XcmTransfered.get(id)
-    if (record === undefined) {
-        const record = new XcmTransfered(id)
-        record.createdAt = ctx.block.timestamp
-        record.sender = sender
-        record.asset = asset.id.asConcrete.toString()
-        record.recipient = recipient
-        // We can safely unwrap here because currently only support fungible transfer
-        record.amount = asset.fun.asFungible.toBigInt()
-        await record.save()
-        logger.debug(`Add new XcmTransfered record: ${record}`)
-    }
-}
-
-export async function handleXcmDepositedEvent(ctx: SubstrateEvent): Promise<void> {
-    const {
-        data: [what, who],
-    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation]>
-
-    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
-    let recipient
-    let isForward = false
-    if (who.parents.eq(0)) {
-        if (who.interior.isX1 && who.interior.asX1.isAccountId32) { // local account
-            recipient = encodeAddress(who.interior.asX1.asAccountId32.id.toHex(), 42).toString()
-        } else if (who.interior.isX3 && who.interior.asX3[2].isGeneralKey) {    // EVM account
-            recipient = who.interior.asX3[2].asGeneralKey.toHex()
-            isForward = true
-        }
-    } else {
-        recipient = 'unknown'
-    }
-
-    const id = `${recipient}-${hash}`
-    let record = await XcmDeposited.get(id)
-    if (record === undefined) {
-        const record = new XcmDeposited(id)
-        record.createdAt = ctx.block.timestamp
-        record.asset = what.id.asConcrete.toString()
-        record.recipient = recipient
-        // We can safely unwrap here because currently only support fungible transfer
-        record.amount = what.fun.asFungible.toBigInt()
-        record.isForward = isForward
-        await record.save()
-        logger.debug(`Add new XcmDeposited record: ${record}`)
-    }
-}
-
-export async function handleXcmWithdrawnEvent(ctx: SubstrateEvent): Promise<void> {
-    const {
-        data: [what, who],
-    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation]>
-
-    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
-    let depositer
-    let isForward = false
-    if (who.parents.eq(0) && who.interior.isX1 && who.interior.asX1.isAccountId32) {
-        depositer = encodeAddress(who.interior.asX1.asAccountId32.id.toHex(), 42).toString()
-    } else {
-        depositer = 'unknown'
-    }
-
-    const id = `${depositer}-${hash}`
-    let record = await XcmWithdrawn.get(id)
-    if (record === undefined) {
-        const record = new XcmWithdrawn(id)
-        record.createdAt = ctx.block.timestamp
-        record.asset = what.id.asConcrete.toString()
-        record.depositer = depositer
-        // We can safely unwrap here because currently only support fungible transfer
-        record.amount = what.fun.asFungible.toBigInt()
-        await record.save()
-        logger.debug(`Add new XcmWithdrawn record: ${record}`)
     }
 }

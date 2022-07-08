@@ -200,9 +200,29 @@ network:
 dataSources:
   - name: main
     kind: substrate/Runtime
-    startBlock: 1401105
+    startBlock: 1617952
     mapping:
       handlers:
+        - handler: handleXTransferWithdrawn
+          kind: substrate/EventHandler
+          filter:
+            module: xTransfer
+            method: Withdrawn
+        - handler: handleXTransferDeposited
+          kind: substrate/EventHandler
+          filter:
+            module: xTransfer
+            method: Deposited
+        - handler: handleXTransferForwarded
+          kind: substrate/EventHandler
+          filter:
+            module: xTransfer
+            method: Forwarded
+        - handler: handleXcmbridgeTransferedEvent
+          kind: substrate/EventHandler
+          filter:
+            module: xcmBridge
+            method: AssetTransfered
         - handler: handleChainbridgeFungibleTransfer
           kind: substrate/EventHandler
           filter:
@@ -233,4 +253,3 @@ dataSources:
           filter:
             module: chainBridge
             method: ProposalFailed
-

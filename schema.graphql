@@ -1,3 +1,27 @@
+
+type Tx @entity {
+    id: ID!
+    hash: String!
+    sender: String!
+}
+
+#XTransfer records
+type XTransferWithdrawn @entity {
+    id: ID!
+    createdAt: Date!
+}
+
+type XTransferDeposited @entity {
+    id: ID!
+    createdAt: Date!
+}
+
+type XTransferForwarded @entity {
+    id: ID!
+    createdAt: Date!
+}
+
+# XCM records
 type XcmTransfered @entity {
     id: ID!
     createdAt: Date!
@@ -6,53 +30,12 @@ type XcmTransfered @entity {
     sender: String! @index
     recipient: String! @index
     amount: BigInt
+
+    index: Int!
 }
 
-type XcmDeposited @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    recipient: String! @index
-    amount: BigInt
-    isForward: Boolean
-}
-
-type XcmWithdrawn @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    depositer: String! @index
-    amount: BigInt
-}
-
-type Tx @entity {
-    id: ID!
-    hash: String!
-    sender: String!
-}
-
-type BridgeDeposited @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    recipient: String! @index
-    amount: BigInt
-}
-
-type BridgeForwarded @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    recipient: String! @index
-    dest: String!
-    amount: BigInt
-}
-
-type BridgeOutboundingRecord @entity {
+# ChainBridge records
+type CTxSent @entity {
     id: ID!
     createdAt: Date!
 
@@ -69,9 +52,11 @@ type BridgeOutboundingRecord @entity {
 
     # Sender can be used to construct user transaction history
     sender: String @index
+
+    index: Int!
 }
 
-type BridgeInboundingRecord @entity {
+type CTxReceived @entity {
     id: ID!
     createdAt: Date!
 

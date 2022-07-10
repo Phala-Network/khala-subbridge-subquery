@@ -9,16 +9,67 @@ type Tx @entity {
 type XTransferWithdrawn @entity {
     id: ID!
     createdAt: Date!
+
+    asset: String! @index
+    # Reprents an local account who paied the asset
+    account: String! @index
+    amount: BigInt
 }
 
 type XTransferDeposited @entity {
     id: ID!
     createdAt: Date!
+
+    # An encoded MultiAsset object
+    asset: String! @index
+
+    isLocal: Boolean
+    # Represent an local account when isLocal is true
+    account: String
+    
+    isRemote: Boolean
+    # An encoded MultiLocation indicate a dest location
+    location: String
+
+    # Recipient corresponding index, should read RecevingCount of the user/location to set this value
+    index: Int! @index
 }
 
 type XTransferForwarded @entity {
     id: ID!
     createdAt: Date!
+
+    asset: String! @index
+    location: String! @index
+}
+
+type XTransferSent @entity {
+    id: ID!
+    createdAt: Date!
+
+    isXcm: Boolean
+    # Refer to a XcmTransfered record
+    xcm: String
+
+    isChainbridge: Boolean
+    # Refer to a CTxSent record
+    chainbridge: String
+
+    sender: String! @index
+    # Sender corresponding index, should read SendigCount of the user to set this value
+    index: Int! @index
+}
+
+# Saving the number of crosschain transfer a user has issuedd, id should be sender address
+type SendingCount @entity {
+    id: ID!
+    count: Int!
+}
+
+# Saving the number of crosschain transfer a user has received, id should be sender address
+type RecevingCount @entity {
+    id: ID!
+    count: Int!
 }
 
 # XCM records
@@ -30,8 +81,6 @@ type XcmTransfered @entity {
     sender: String! @index
     recipient: String! @index
     amount: BigInt
-
-    index: Int!
 }
 
 # ChainBridge records
@@ -52,8 +101,6 @@ type CTxSent @entity {
 
     # Sender can be used to construct user transaction history
     sender: String @index
-
-    index: Int!
 }
 
 type CTxReceived @entity {

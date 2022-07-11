@@ -1,27 +1,110 @@
-import { encodeAddress } from '@polkadot/util-crypto'
-import { Bytes, decorateStorage, U256 } from '@polkadot/types'
+import { Bytes, U256 } from '@polkadot/types'
 import { IEvent } from '@polkadot/types/types'
 import { SubstrateEvent } from '@subql/types'
-import { AccountId, Balance } from "@polkadot/types/interfaces"
+import { AccountId } from "@polkadot/types/interfaces"
 import { XcmV1MultiAsset, XcmV1MultiLocation } from '@polkadot/types/lookup'
 
 import { BridgeChainId, DepositNonce, ResourceId } from '../interfaces'
 import {
-    CTxSent, CTxReceived,
-    Tx, XcmTransfered, XcmDeposited, XcmWithdrawn
+    Tx, XTransferWithdrawn, XTransferDeposited, XTransferForwarded, XTransferSent,
+    SendingCount, RecevingCount, XcmTransfered, CTxSent, CTxReceived,
 } from '../types'
 
 export async function handleXTransferWithdrawn(ctx: SubstrateEvent): Promise<void> {
+    const {
+        data: [asset, location],
+    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation]>
 
+    let payer: string
+    if (location.parents.eq(0) && location.interior.isX1 && location.interior.asX1.isAccountId32) {
+        // Indicated by pubkey
+        payer = location.interior.asX1.asAccountId32.id.toHex()
+    } else {
+        payer = 'unknown'
+    }
+
+    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
+    let id = `${payer}-${hash}`
+    let record = await XTransferWithdrawn.get(id)
+    if (record === undefined) {
+        const record = new XTransferWithdrawn(id)
+        record.createdAt = ctx.block.timestamp
+        record.account = payer
+        record.asset = asset.id.asConcrete.toHex()
+        // We can safely unwrap here because currently only support fungible transfer
+        record.amount = asset.fun.asFungible.toBigInt()
+        await record.save()
+        logger.debug(`Add new XTransferWithdrawn record: ${record}`)
+    }
 }
 
-
 export async function handleXTransferDeposited(ctx: SubstrateEvent): Promise<void> {
+    const {
+        data: [asset, location],
+    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation]>
 
+    let recipient: string
+    let isLocal: boolean = false
+    let isRemote: boolean = false
+    if (location.parents.eq(1) && location.interior.isX1 && location.interior.asX1.isAccountId32) {
+        recipient = location.interior.asX1.asAccountId32.id.toHex()
+        isLocal = true
+    } else {
+        recipient = location.toHex()
+        isRemote = true
+    }
+
+    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
+    let id = `${recipient}-${hash}`
+    let record = await XTransferDeposited.get(id)
+    if (record === undefined) {
+        const record = new XTransferDeposited(id)
+        record.createdAt = ctx.block.timestamp
+        if (isLocal == true) {
+            record.isLocal = true
+            record.account = recipient
+        } else {
+            record.isRemote = true
+            record.location = recipient
+        }
+        record.asset = asset.id.asConcrete.toString()
+        // We can safely unwrap here because currently only support fungible transfer
+        record.amount = asset.fun.asFungible.toBigInt()
+
+        // Set index
+        let recevingCount = await RecevingCount.get(recipient)
+        if (recevingCount == undefined) {
+            const recevingCount = new RecevingCount(recipient)
+            recevingCount.count = 1
+        } else {
+            recevingCount.count = recevingCount.count + 1
+        }
+        record.index = recevingCount.count - 1
+
+        await recevingCount.save()
+        await record.save()
+        logger.debug(`Add new XTransferDeposited record: ${record}`)
+    }
 }
 
 export async function handleXTransferForwarded(ctx: SubstrateEvent): Promise<void> {
+    const {
+        data: [asset, location],
+    } = ctx.event as unknown as IEvent<[XcmV1MultiAsset, XcmV1MultiLocation]>
 
+    let hash = ctx.extrinsic?.extrinsic.hash.toHex()
+    let id = `bridge-${hash}`
+    let record = await XTransferForwarded.get(id)
+    if (record === undefined) {
+        const record = new XTransferForwarded(id)
+        record.createdAt = ctx.block.timestamp
+        record.location = location.toHex()
+        record.asset = asset.id.asConcrete.toHex()
+        // We can safely unwrap here because currently only support fungible transfer
+        record.amount = asset.fun.asFungible.toBigInt()
+        await record.save()
+        logger.debug(`Add new XTransferForwarded record: ${record}`)
+    }
 }
 
 export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promise<void> {
@@ -33,9 +116,9 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
     let sender = origin.interior.asX1.asAccountId32.id.toString()
     let recipient
     if (dest.parents.eq(1) && dest.interior.isX1 && dest.interior.asX1.isAccountId32) { // to relaychain
-        recipient = encodeAddress(dest.interior.asX1.asAccountId32.id.toHex(), 42).toString()
+        recipient = dest.interior.asX1.asAccountId32.id.toHex()
     } else if (dest.parents.eq(1) && dest.interior.isX2 && dest.interior.asX2[0].isParachain && dest.interior.asX2[1].isAccountId32) {  // to parachain
-        recipient = encodeAddress(dest.interior.asX2[1].asAccountId32.id.toHex(), 42).toString()
+        recipient = dest.interior.asX2[1].asAccountId32.id.toHex()
     } else {
         recipient = 'unknown'
     }
@@ -52,6 +135,26 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
         record.amount = asset.fun.asFungible.toBigInt()
         await record.save()
         logger.debug(`Add new XcmTransfered record: ${record}`)
+
+        // Create corresponding XTransferSent record
+        const xTransferSent = new XTransferSent(`xtransfer-${sender}-${hash}`)
+        xTransferSent.createdAt = ctx.block.timestamp
+        xTransferSent.isXcm = true
+        xTransferSent.xcm = id
+        xTransferSent.sender = sender
+        // Set index
+        let sendingCount = await SendingCount.get(sender)
+        if (sendingCount == undefined) {
+            const sendingCount = new SendingCount(sender)
+            sendingCount.count = 1
+        } else {
+            sendingCount.count = sendingCount.count + 1
+        }
+        xTransferSent.index = sendingCount.count - 1
+
+        await sendingCount.save()
+        await xTransferSent.save()
+        logger.debug(`Add new xTransferSent record: ${xTransferSent}`)
     }
 }
 
@@ -84,6 +187,27 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
         record.sendTx = txId
         await record.save()
         logger.debug(`Created new outbounding record: ${record}`)
+
+        // Create corresponding XTransferSent record
+        let hash = ctx.extrinsic?.extrinsic.hash.toHex()
+        const xTransferSent = new XTransferSent(`xtransfer-${record.sender}-${hash}`)
+        xTransferSent.createdAt = ctx.block.timestamp
+        xTransferSent.isChainbridge = true
+        xTransferSent.chainbridge = id
+        xTransferSent.sender = record.sender
+        // Set index
+        let sendingCount = await SendingCount.get(record.sender)
+        if (sendingCount == undefined) {
+            const sendingCount = new SendingCount(record.sender)
+            sendingCount.count = 1
+        } else {
+            sendingCount.count = sendingCount.count + 1
+        }
+        xTransferSent.index = sendingCount.count - 1
+
+        await sendingCount.save()
+        await xTransferSent.save()
+        logger.debug(`Add new xTransferSent record: ${xTransferSent}`)
     }
 }
 

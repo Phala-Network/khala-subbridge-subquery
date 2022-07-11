@@ -10,6 +10,7 @@ type XTransferWithdrawn @entity {
     id: ID!
     createdAt: Date!
 
+    # Encoded concrete asset id as string of MultiAsset
     asset: String! @index
     # Reprents an local account who paied the asset
     account: String! @index
@@ -20,8 +21,9 @@ type XTransferDeposited @entity {
     id: ID!
     createdAt: Date!
 
-    # An encoded MultiAsset object
+    # Encoded concrete asset id as string of MultiAsset
     asset: String! @index
+    amount: BigInt!
 
     isLocal: Boolean
     # Represent an local account when isLocal is true
@@ -39,7 +41,9 @@ type XTransferForwarded @entity {
     id: ID!
     createdAt: Date!
 
+    # Encoded concrete asset id as string of MultiAsset
     asset: String! @index
+    amount: BigInt!
     location: String! @index
 }
 
@@ -77,6 +81,7 @@ type XcmTransfered @entity {
     id: ID!
     createdAt: Date!
 
+    # Encoded concrete asset id as string of MultiAsset
     asset: String! @index
     sender: String! @index
     recipient: String! @index

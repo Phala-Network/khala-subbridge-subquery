@@ -27,5 +27,8 @@
   "dependencies": {
     "bn.js": "^5.2.0",
     "decimal.js": "^10.3.1"
-  }
+  },
+  "resolutions": {
+    "ipfs-unixfs": "6.0.6"
+  } 
 }

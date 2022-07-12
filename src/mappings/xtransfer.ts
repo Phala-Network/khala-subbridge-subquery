@@ -178,7 +178,7 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
         record.resourceId = resourceId.toHex()
         record.amount = amount.toBigInt()
         record.recipient = recipient.toHex()
-        record.sender = ctx.extrinsic?.extrinsic.isSigned ? ctx.extrinsic?.extrinsic.signer.toString() : undefined
+        record.sender = ctx.extrinsic?.extrinsic.isSigned ? ctx.extrinsic?.extrinsic.signer.toString() : 'chainbridge-forward'
 
         let txId = ctx.extrinsic?.extrinsic.hash.toHex()
         let sendTx = new Tx(txId)

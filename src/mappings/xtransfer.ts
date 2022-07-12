@@ -27,7 +27,7 @@ export async function handleXTransferWithdrawn(ctx: SubstrateEvent): Promise<voi
     let id = `${payer}-${hash}`
     let record = await XTransferWithdrawn.get(id)
     if (record === undefined) {
-        const record = new XTransferWithdrawn(id)
+        record = new XTransferWithdrawn(id)
         record.createdAt = ctx.block.timestamp
         record.account = payer
         record.asset = asset.id.asConcrete.toHex()
@@ -58,7 +58,7 @@ export async function handleXTransferDeposited(ctx: SubstrateEvent): Promise<voi
     let id = `${recipient}-${hash}`
     let record = await XTransferDeposited.get(id)
     if (record === undefined) {
-        const record = new XTransferDeposited(id)
+        record = new XTransferDeposited(id)
         record.createdAt = ctx.block.timestamp
         if (isLocal == true) {
             record.isLocal = true
@@ -74,12 +74,13 @@ export async function handleXTransferDeposited(ctx: SubstrateEvent): Promise<voi
         // Set index
         let recevingCount = await RecevingCount.get(recipient)
         if (recevingCount == undefined) {
-            const recevingCount = new RecevingCount(recipient)
+            recevingCount = new RecevingCount(recipient)
             recevingCount.count = 1
+            record.index = 0
         } else {
+            record.index = recevingCount.count
             recevingCount.count = recevingCount.count + 1
         }
-        record.index = recevingCount.count - 1
 
         await recevingCount.save()
         await record.save()
@@ -96,7 +97,7 @@ export async function handleXTransferForwarded(ctx: SubstrateEvent): Promise<voi
     let id = `bridge-${hash}`
     let record = await XTransferForwarded.get(id)
     if (record === undefined) {
-        const record = new XTransferForwarded(id)
+        record = new XTransferForwarded(id)
         record.createdAt = ctx.block.timestamp
         record.location = location.toHex()
         record.asset = asset.id.asConcrete.toHex()
@@ -126,7 +127,7 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
     const id = `${sender}-${hash}`
     let record = await XcmTransfered.get(id)
     if (record === undefined) {
-        const record = new XcmTransfered(id)
+        record = new XcmTransfered(id)
         record.createdAt = ctx.block.timestamp
         record.sender = sender
         record.asset = asset.id.asConcrete.toString()
@@ -145,12 +146,13 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
         // Set index
         let sendingCount = await SendingCount.get(sender)
         if (sendingCount == undefined) {
-            const sendingCount = new SendingCount(sender)
+            sendingCount = new SendingCount(sender)
             sendingCount.count = 1
+            xTransferSent.index = 0
         } else {
+            xTransferSent.index = sendingCount.count
             sendingCount.count = sendingCount.count + 1
         }
-        xTransferSent.index = sendingCount.count - 1
 
         await sendingCount.save()
         await xTransferSent.save()
@@ -198,12 +200,13 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
         // Set index
         let sendingCount = await SendingCount.get(record.sender)
         if (sendingCount == undefined) {
-            const sendingCount = new SendingCount(record.sender)
+            sendingCount = new SendingCount(record.sender)
             sendingCount.count = 1
+            xTransferSent.index = 0
         } else {
+            xTransferSent.index = sendingCount.count
             sendingCount.count = sendingCount.count + 1
         }
-        xTransferSent.index = sendingCount.count - 1
 
         await sendingCount.save()
         await xTransferSent.save()

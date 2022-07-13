@@ -1,14 +1,19 @@
-specVersion: 0.0.1
-description: ''
+specVersion: 0.2.0
+name: subbridge-subquery
+version: 0.0.1
+description: 'SubBridge index service build on top of SubQuery'
 repository: https://github.com/Phala-Network/khala-subbridge-subquery.git
-schema: ./schema.graphql
+schema:
+  file: ./schema.graphql
 network:
-  endpoint: wss://khala.api.onfinality.io/public-ws
+  genesisHash: '0xd43540ba6d3eb4897c28a77d48cb5b729fea37603cbbfc7a86a73b72adb3be8d'
+  endpoint: wss://khala.api.onfinality.io/public-ws,
+  dictionary: 'https://api.subquery.network/sq/subquery/khala-dictionary'
 dataSources:
-  - name: main
-    kind: substrate/Runtime
+  - kind: substrate/Runtime
     startBlock: 1617952
     mapping:
+      file: ./dist/index.js
       handlers:
         - handler: handleXTransferWithdrawn
           kind: substrate/EventHandler

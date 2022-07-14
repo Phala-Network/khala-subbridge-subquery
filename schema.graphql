@@ -53,11 +53,11 @@ type XTransferSent @entity {
 
     isXcm: Boolean
     # Refer to a XcmTransfered record
-    xcm: String
+    xcm: XcmTransfered
 
     isChainbridge: Boolean
     # Refer to a CTxSent record
-    chainbridge: String
+    chainbridge: CTxSent
 
     sender: String! @index
     # Sender corresponding index, should read SendigCount of the user to set this value
@@ -102,7 +102,7 @@ type CTxSent @entity {
     amount: BigInt
     recipient: String @index
 
-    sendTx: String
+    sendTx: Tx
 
     # Sender can be used to construct user transaction history
     sender: String @index
@@ -122,5 +122,5 @@ type CTxReceived @entity {
     status: String!
 
     voteTxs: [String!]!
-    executeTx: String
+    executeTx: Tx
 }

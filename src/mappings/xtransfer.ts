@@ -142,7 +142,7 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
         const xTransferSent = new XTransferSent(`xtransfer-${sender}-${hash}`)
         xTransferSent.createdAt = ctx.block.timestamp
         xTransferSent.isXcm = true
-        xTransferSent.xcm = id
+        xTransferSent.xcmId = id
         xTransferSent.sender = sender
         // Set index
         let sendingCount = await SendingCount.get(sender)
@@ -157,7 +157,7 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
 
         await sendingCount.save()
         await xTransferSent.save()
-        logger.debug(`Add new xTransferSent record: ${xTransferSent}`)
+        logger.debug(`Add new xTransferSent record: ${JSON.stringify(xTransferSent, null, 2)}`)
     }
 }
 
@@ -191,7 +191,7 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
         sendTx.sender = record.sender
         await sendTx.save()
 
-        record.sendTx = txId
+        record.sendTxId = txId
         await record.save()
         logger.debug(`Created new outbounding record: ${record}`)
 
@@ -200,7 +200,7 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
         const xTransferSent = new XTransferSent(`xtransfer-${record.sender}-${hash}`)
         xTransferSent.createdAt = ctx.block.timestamp
         xTransferSent.isChainbridge = true
-        xTransferSent.chainbridge = id
+        xTransferSent.chainbridgeId = id
         xTransferSent.sender = record.sender
         // Set index
         let sendingCount = await SendingCount.get(record.sender)
@@ -215,7 +215,7 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
 
         await sendingCount.save()
         await xTransferSent.save()
-        logger.debug(`Add new xTransferSent record: ${xTransferSent}`)
+        logger.debug(`Add new xTransferSent record: ${JSON.stringify(xTransferSent, null, 2)}`)
     }
 }
 
@@ -289,7 +289,7 @@ export async function handleChainbridgeProposalSucceeded(ctx: SubstrateEvent): P
         executeTx.sender = ctx.extrinsic?.extrinsic.signer.toString()
         await executeTx.save()
 
-        record.executeTx = txId
+        record.executeTxId = txId
         await record.save()
         logger.debug(`Inbounding record succeeded: ${id}, with execute tx: ${executeTx}`)
     }

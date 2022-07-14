@@ -3,6 +3,7 @@ import { IEvent } from '@polkadot/types/types'
 import { SubstrateEvent } from '@subql/types'
 import { AccountId } from "@polkadot/types/interfaces"
 import { XcmV1MultiAsset, XcmV1MultiLocation } from '@polkadot/types/lookup'
+import { decodeAddress } from '@polkadot/util-crypto'
 
 import { BridgeChainId, DepositNonce, ResourceId } from '../interfaces'
 import {
@@ -160,6 +161,10 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
     }
 }
 
+function address2pubkey(address: string): string {
+    return '0x' + Buffer.from(decodeAddress(address)).toString('hex')
+}
+
 export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Promise<void> {
     const {
         data: [chainIdCodec, depositNonceCodec, resourceId, amount, recipient],
@@ -172,18 +177,18 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
 
     if (undefined === (await CTxSent.get(id))) {
         const record = new CTxSent(id)
+        const sender = ctx.extrinsic?.extrinsic.isSigned ? address2pubkey(ctx.extrinsic?.extrinsic.signer.toString()) : 'chainbridge-forward'
         record.createdAt = ctx.block.timestamp
         record.destChainId = chainId
         record.depositNonce = depositNonce
         record.resourceId = resourceId.toHex()
         record.amount = amount.toBigInt()
         record.recipient = recipient.toHex()
-        record.sender = ctx.extrinsic?.extrinsic.isSigned ? ctx.extrinsic?.extrinsic.signer.toString() : 'chainbridge-forward'
-
+        record.sender = sender
         let txId = ctx.extrinsic?.extrinsic.hash.toHex()
         let sendTx = new Tx(txId)
         sendTx.hash = ctx.extrinsic?.extrinsic.hash.toHex()
-        sendTx.sender = ctx.extrinsic?.extrinsic.signer.toString()
+        sendTx.sender = record.sender
         await sendTx.save()
 
         record.sendTx = txId

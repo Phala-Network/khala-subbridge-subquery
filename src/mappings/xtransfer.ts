@@ -47,7 +47,7 @@ export async function handleXTransferDeposited(ctx: SubstrateEvent): Promise<voi
     let recipient: string
     let isLocal: boolean = false
     let isRemote: boolean = false
-    if (location.parents.eq(1) && location.interior.isX1 && location.interior.asX1.isAccountId32) {
+    if (location.parents.eq(0) && location.interior.isX1 && location.interior.asX1.isAccountId32) {
         recipient = location.interior.asX1.asAccountId32.id.toHex()
         isLocal = true
     } else {

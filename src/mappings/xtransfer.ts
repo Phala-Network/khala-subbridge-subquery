@@ -202,7 +202,7 @@ export async function handleChainbridgeFungibleTransfer(ctx: SubstrateEvent): Pr
 
         record.sendTxId = txId
         await record.save()
-        logger.debug(`Created new outbounding record: ${record}`)
+        logger.debug(`Created new CTxSent record: ${record}`)
 
         // Create corresponding XTransferSent record
         let hash = ctx.extrinsic?.extrinsic.hash.toHex()
@@ -246,7 +246,7 @@ export async function handleChainbridgeProposalVoteFor(ctx: SubstrateEvent): Pro
         record.resourceId = ctx.extrinsic?.extrinsic.args[2].toHex()
         record.status = 'Initiated'
         record.voteTxs = []
-        logger.debug(`Created new inbounding record: ${record}`)
+        logger.debug(`Created new CTxReceived record: ${record}`)
     }
 
     let txId = ctx.extrinsic.extrinsic.hash.toHex()
@@ -259,7 +259,7 @@ export async function handleChainbridgeProposalVoteFor(ctx: SubstrateEvent): Pro
     votes.push(txId)
     record.voteTxs = votes
     await record.save()
-    logger.debug(`Add new vote into inbounding record: ${record}`)
+    logger.debug(`Add new vote into CTxReceived record: ${record}`)
 }
 
 export async function handleChainbridgeProposalApproved(ctx: SubstrateEvent): Promise<void> {
@@ -275,7 +275,7 @@ export async function handleChainbridgeProposalApproved(ctx: SubstrateEvent): Pr
     if (record !== undefined) {
         record.status = 'Approved'
         await record.save()
-        logger.debug(`Inbounding record approved: ${id}`)
+        logger.debug(`CTxReceived approved: ${id}`)
     }
 }
 
@@ -300,7 +300,7 @@ export async function handleChainbridgeProposalSucceeded(ctx: SubstrateEvent): P
 
         record.executeTxId = txId
         await record.save()
-        logger.debug(`Inbounding record succeeded: ${id}, with execute tx: ${executeTx}`)
+        logger.debug(`CTxReceived record succeeded: ${id}, with execute tx: ${executeTx}`)
     }
 }
 
@@ -317,7 +317,7 @@ export async function handleChainbridgeProposalRejected(ctx: SubstrateEvent): Pr
     if (record !== undefined) {
         record.status = 'Rejected'
         await record.save()
-        logger.debug(`Inbounding record rejected: ${id}`)
+        logger.debug(`CTxReceived record rejected: ${id}`)
     }
 }
 
@@ -334,6 +334,6 @@ export async function handleChainbridgeProposalFailed(ctx: SubstrateEvent): Prom
     if (record !== undefined) {
         record.status = 'Failed'
         await record.save()
-        logger.debug(`Inbounding record failed: ${id}`)
+        logger.debug(`CTxReceived record failed: ${id}`)
     }
 }

@@ -86,6 +86,7 @@ type XcmTransfered @entity {
     sender: String! @index
     recipient: String! @index
     amount: BigInt
+    sendTx: Tx
 }
 
 # ChainBridge records

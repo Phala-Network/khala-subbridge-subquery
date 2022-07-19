@@ -137,6 +137,13 @@ export async function handleXcmbridgeTransferedEvent(ctx: SubstrateEvent): Promi
         record.recipient = recipient
         // We can safely unwrap here because currently only support fungible transfer
         record.amount = asset.fun.asFungible.toBigInt()
+        let txId = ctx.extrinsic?.extrinsic.hash.toHex()
+        let sendTx = new Tx(txId)
+        sendTx.hash = ctx.extrinsic?.extrinsic.hash.toHex()
+        sendTx.sender = record.sender
+        await sendTx.save()
+
+        record.sendTxId = txId
         await record.save()
         logger.debug(`Add new XcmTransfered record: ${record}`)
 

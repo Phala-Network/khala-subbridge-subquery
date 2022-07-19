@@ -63,9 +63,11 @@ export async function handleXTransferDeposited(ctx: SubstrateEvent): Promise<voi
         record.createdAt = ctx.block.timestamp
         if (isLocal == true) {
             record.isLocal = true
+            record.isRemote = false
             record.account = recipient
         } else {
             record.isRemote = true
+            record.isLocal = false
             record.location = recipient
         }
         record.asset = asset.id.asConcrete.toString()

@@ -1,31 +1,3 @@
-type XcmTransfered @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    sender: String! @index
-    recipient: String! @index
-    amount: BigInt
-}
-
-type XcmDeposited @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    recipient: String! @index
-    amount: BigInt
-    isForward: Boolean
-}
-
-type XcmWithdrawn @entity {
-    id: ID!
-    createdAt: Date!
-
-    asset: String! @index
-    depositer: String! @index
-    amount: BigInt
-}
 
 type Tx @entity {
     id: ID!
@@ -33,26 +5,92 @@ type Tx @entity {
     sender: String!
 }
 
-type BridgeDeposited @entity {
+#XTransfer records
+type XTransferWithdrawn @entity {
     id: ID!
     createdAt: Date!
 
+    # Encoded concrete asset id as string of MultiAsset
     asset: String! @index
-    recipient: String! @index
+    # Reprents an local account who paied the asset
+    account: String! @index
     amount: BigInt
 }
 
-type BridgeForwarded @entity {
+type XTransferDeposited @entity {
     id: ID!
     createdAt: Date!
 
+    # Encoded concrete asset id as string of MultiAsset
     asset: String! @index
-    recipient: String! @index
-    dest: String!
-    amount: BigInt
+    amount: BigInt!
+
+    isLocal: Boolean
+    # Represent an local account when isLocal is true
+    account: String
+    
+    isRemote: Boolean
+    # An encoded MultiLocation indicate a dest location
+    location: String
+
+    # Recipient corresponding index, should read RecevingCount of the user/location to set this value
+    index: Int! @index
 }
 
-type BridgeOutboundingRecord @entity {
+type XTransferForwarded @entity {
+    id: ID!
+    createdAt: Date!
+
+    # Encoded concrete asset id as string of MultiAsset
+    asset: String! @index
+    amount: BigInt!
+    location: String! @index
+}
+
+type XTransferSent @entity {
+    id: ID!
+    createdAt: Date!
+
+    isXcm: Boolean
+    # Refer to a XcmTransfered record
+    xcm: XcmTransfered
+
+    isChainbridge: Boolean
+    # Refer to a CTxSent record
+    chainbridge: CTxSent
+
+    sender: String! @index
+    # Sender corresponding index, should read SendigCount of the user to set this value
+    index: Int! @index
+}
+
+# Saving the number of crosschain transfer a user has issuedd, id should be sender address
+type SendingCount @entity {
+    id: ID!
+    count: Int!
+}
+
+# Saving the number of crosschain transfer a user has received, id should be sender address
+type RecevingCount @entity {
+    id: ID!
+    count: Int!
+}
+
+# XCM records
+type XcmTransfered @entity {
+    id: ID!
+    createdAt: Date!
+
+    # Encoded concrete asset id as string of MultiAsset
+    asset: String! @index
+    sender: String! @index
+    recipient: String! @index
+    amount: BigInt
+    sendTx: Tx
+}
+
+# ChainBridge records
+type CTxSent @entity {
     id: ID!
     createdAt: Date!
 
@@ -65,13 +103,13 @@ type BridgeOutboundingRecord @entity {
     amount: BigInt
     recipient: String @index
 
-    sendTx: String
+    sendTx: Tx
 
     # Sender can be used to construct user transaction history
     sender: String @index
 }
 
-type BridgeInboundingRecord @entity {
+type CTxReceived @entity {
     id: ID!
     createdAt: Date!
 
@@ -85,5 +123,5 @@ type BridgeInboundingRecord @entity {
     status: String!
 
     voteTxs: [String!]!
-    executeTx: String
+    executeTx: Tx
 }
